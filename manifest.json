@@ -1,0 +1,24 @@
+{
+  "name": "Tarefas · Cia do Fitness",
+  "short_name": "Tarefas",
+  "description": "Gestão de tarefas da academia",
+  "start_url": "/tarefas-academia/",
+  "display": "standalone",
+  "background_color": "#f5f5f3",
+  "theme_color": "#f5f5f3",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
