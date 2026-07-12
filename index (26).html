@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarefas · Cia do Fitness</title>
+  <meta name="theme-color" content="#f5f5f3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Tarefas" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --surface-2: #f0f0ee;
+      --border: #e0e0de;
+      --text: #1a1a1a;
+      --text-muted: #888885;
+      --text-faint: #b8b8b5;
+      --yellow: #F5C400;
+      --yellow-dark: #c9a000;
+      --black: #1a1a1a;
+      --orange: #e07b00;
+      --orange-bg: #fff8ee;
+      --red: #cc2200;
+      --red-bg: #fff2f0;
+      --green: #1a7a3c;
+      --green-bg: #edfbf3;
+      --radius: 10px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo-dot { width: 8px; height: 8px; background: var(--yellow); border-radius: 50%; }
+    .logo-text { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .tab {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      letter-spacing: 0.03em;
+    }
+
+    .tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 20px 20px 100px;
+    }
+
+    /* ── FILTRO ── */
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--yellow); color: var(--text); }
+    .filter-btn.active { background: var(--yellow); border-color: var(--yellow); color: var(--black); font-weight: 600; }
+
+    /* ── TASK CARD ── */
+    .task-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; }
+
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+      animation: slideIn 0.2s ease;
+    }
+
+    .task-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 10px 0 0 10px;
+    }
+
+    .task-card:hover { box-shadow: var(--shadow-md); }
+    .task-card.old-task { border-color: #f0c060; background: #fffdf0; }
+
+    .task-check {
+      width: 20px; height: 20px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      margin-left: 4px; margin-top: 1px;
+    }
+
+    .task-check:hover { border-color: var(--yellow); background: rgba(245,196,0,0.08); }
+    .task-check.done { background: var(--yellow); border-color: var(--yellow); }
+    .task-check.done::after {
+      content: '';
+      width: 10px; height: 6px;
+      border-left: 2px solid var(--black);
+      border-bottom: 2px solid var(--black);
+      transform: rotate(-45deg) translateY(-1px);
+      display: block;
+    }
+
+    .task-content { flex: 1; min-width: 0; }
+
+    .task-title {
+      font-size: 14px; font-weight: 400;
+      color: var(--text);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .task-meta {
+      display: flex; align-items: center;
+      gap: 6px; margin-top: 5px;
+      flex-wrap: wrap;
+    }
+
+    .task-obs {
+      font-size: 12px; color: var(--text-muted);
+      margin-top: 7px; padding: 7px 10px;
+      background: var(--bg);
+      border-radius: 6px;
+      border-left: 2px solid var(--border);
+      line-height: 1.5;
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    .task-pausa-motivo {
+      font-size: 11px; color: var(--orange);
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    /* Tags de responsável */
+    .resp-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .resp-tag:hover { opacity: 0.8; }
+
+    .task-age {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; color: var(--text-faint);
+    }
+    .task-age.warn { color: #b8860b; font-weight: 500; }
+    .task-age.alert { color: #cc6600; font-weight: 600; }
+
+    /* Botões de ação no card */
+    .task-actions {
+      display: flex; flex-direction: column;
+      gap: 4px; flex-shrink: 0;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .task-card:hover .task-actions { opacity: 1; }
+
+    .task-action-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-faint); padding: 4px;
+      border-radius: 4px; transition: all 0.15s;
+      font-size: 13px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .task-action-btn:hover { background: var(--surface-2); color: var(--text); }
+    .task-action-btn.danger:hover { color: var(--red); background: var(--red-bg); }
+    .task-action-btn.pause:hover { color: var(--orange); background: var(--orange-bg); }
+
+    /* ── BADGE RECÉM CONCLUÍDA ── */
+    .recently-done {
+      background: var(--green-bg);
+      border-color: #a3d9b8;
+    }
+    .recently-done .task-title { color: var(--text-muted); text-decoration: line-through; }
+    .done-badge {
+      font-size: 10px; font-weight: 600;
+      color: var(--green);
+      background: #c8f0d8;
+      padding: 2px 7px; border-radius: 4px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── HISTÓRICO ── */
+    .hist-section { margin-bottom: 32px; }
+
+    .hist-section-title {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-faint); margin-bottom: 10px; padding-left: 2px;
+    }
+
+    .hist-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 12px;
+      opacity: 0.7;
+    }
+
+    .hist-card.cancelada { border-left: 3px solid #ddd; }
+
+    .hist-icon {
+      width: 18px; height: 18px;
+      border-radius: 5px;
+      flex-shrink: 0; margin-left: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+
+    .hist-icon.concluida {
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+    }
+    .hist-icon.concluida::after {
+      content: '';
+      width: 9px; height: 5px;
+      border-left: 1.5px solid var(--text-faint);
+      border-bottom: 1.5px solid var(--text-faint);
+      transform: rotate(-45deg) translateY(-1px);
+      display: block;
+    }
+    .hist-icon.cancelada {
+      background: #f5f5f5;
+      border: 1.5px solid #ddd;
+      color: #aaa; font-size: 11px; font-weight: 500;
+    }
+
+    .hist-body { flex: 1; min-width: 0; }
+    .hist-title { font-size: 13px; color: var(--text-muted); text-decoration: line-through; }
+    .hist-sub { font-size: 11px; color: var(--text-faint); margin-top: 2px; font-style: italic; }
+
+    .hist-info {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; color: var(--text-faint);
+      text-align: right; white-space: nowrap;
+    }
+
+    /* ── PAUSADAS ── */
+    .paused-card {
+      background: var(--orange-bg);
+      border: 1px solid #f0c060;
+      border-radius: var(--radius);
+      padding: 14px 16px; margin-bottom: 6px;
+      display: flex; align-items: flex-start; gap: 12px;
+      animation: slideIn 0.2s ease;
+    }
+
+    .paused-icon {
+      width: 20px; height: 20px;
+      border-radius: 6px;
+      background: #f0c060;
+      flex-shrink: 0; margin-left: 4px; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+
+    .paused-body { flex: 1; min-width: 0; }
+    .paused-title { font-size: 14px; color: var(--text); line-height: 1.4; }
+    .paused-meta { display: flex; gap: 6px; align-items: center; margin-top: 5px; flex-wrap: wrap; }
+    .paused-motivo {
+      font-size: 11px; color: var(--orange);
+      font-style: italic;
+    }
+
+    .btn-reativar {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+      border: 1px solid var(--orange);
+      background: transparent; color: var(--orange);
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-reativar:hover { background: var(--orange); color: #fff; }
+
+    /* ── CONFIG ── */
+    .config-section { margin-bottom: 32px; }
+    .config-title {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-faint); margin-bottom: 12px;
+    }
+
+    .resp-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .resp-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .resp-name { flex: 1; font-size: 14px; }
+
+    .resp-delete-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-faint); font-size: 14px; padding: 4px;
+      border-radius: 4px; transition: all 0.15s;
+    }
+    .resp-delete-btn:hover { color: var(--red); }
+
+    .add-resp-form { display: flex; gap: 8px; margin-top: 12px; }
+
+    .input-text {
+      flex: 1;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface); color: var(--text);
+      outline: none; transition: border-color 0.15s;
+    }
+    .input-text:focus { border-color: var(--yellow); }
+
+    .input-color {
+      width: 40px; height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 8px; cursor: pointer;
+      padding: 3px; background: var(--surface);
+    }
+
+    .btn-sm {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; font-weight: 600;
+      padding: 9px 16px; border-radius: 8px;
+      border: none; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--yellow); color: var(--black); }
+    .btn-primary:hover { background: var(--yellow-dark); color: #fff; }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed;
+      bottom: 28px; right: 24px;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--yellow); color: var(--black);
+      font-size: 24px; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(245,196,0,0.4), 0 2px 4px rgba(0,0,0,0.12);
+      transition: transform 0.2s, box-shadow 0.2s;
+      z-index: 200; line-height: 1;
+    }
+    .fab:hover { transform: scale(1.07); }
+    .fab.hidden { display: none; }
+
+    /* ── MODAIS GERAIS ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(4px);
+      z-index: 300;
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 24px 24px 40px;
+      width: 100%; max-width: 680px;
+      transform: translateY(100%);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-handle {
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+
+    .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+    .modal-input {
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg); color: var(--text);
+      outline: none; transition: border-color 0.15s;
+      margin-bottom: 12px;
+    }
+    .modal-input:focus { border-color: var(--yellow); }
+
+    .modal-textarea {
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg); color: var(--text);
+      outline: none; transition: border-color 0.15s;
+      margin-bottom: 16px;
+      resize: vertical; min-height: 72px; line-height: 1.5;
+    }
+    .modal-textarea:focus { border-color: var(--yellow); }
+
+    .modal-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-faint); margin-bottom: 8px;
+    }
+
+    .resp-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+
+    .resp-option {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500;
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer; transition: all 0.15s; color: var(--text);
+    }
+    .resp-option.selected { border-color: var(--yellow); background: var(--yellow); color: var(--black); }
+
+    .modal-actions { display: flex; gap: 8px; }
+
+    .btn-cancel {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 500;
+      padding: 12px 20px; border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: transparent; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-cancel:hover { background: var(--surface-2); }
+
+    .btn-save {
+      flex: 1;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 600;
+      padding: 12px 20px; border-radius: 10px;
+      border: none;
+      background: var(--yellow); color: var(--black);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-save:hover { background: var(--yellow-dark); color: #fff; }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── MODAL CENTRADO (pausa/cancelar/15dias) ── */
+    .center-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(4px);
+      z-index: 400;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .center-overlay.open { opacity: 1; pointer-events: all; }
+
+    .center-modal {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%; max-width: 400px;
+      box-shadow: var(--shadow-md);
+      transform: scale(0.96);
+      transition: transform 0.2s;
+    }
+    .center-overlay.open .center-modal { transform: scale(1); }
+
+    .center-modal-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .center-modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+    .center-modal-task { font-size: 14px; font-weight: 500; margin-bottom: 16px; padding: 10px 12px; background: var(--bg); border-radius: 8px; line-height: 1.4; }
+
+    .motivo-options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+
+    .motivo-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500;
+      padding: 10px 14px; border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text);
+      cursor: pointer; text-align: left;
+      transition: all 0.15s;
+    }
+    .motivo-btn:hover { border-color: var(--yellow); background: rgba(245,196,0,0.06); }
+    .motivo-btn.selected { border-color: var(--yellow); background: var(--yellow); color: var(--black); }
+
+    .center-modal-actions { display: flex; gap: 8px; }
+
+    .btn-confirm {
+      flex: 1;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 600;
+      padding: 11px; border-radius: 10px;
+      border: none; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-confirm.yellow { background: var(--yellow); color: var(--black); }
+    .btn-confirm.yellow:hover { background: var(--yellow-dark); color: #fff; }
+    .btn-confirm.red { background: var(--red); color: #fff; }
+    .btn-confirm.red:hover { background: #aa1800; }
+    .btn-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── ASSIGN MODAL ── */
+    .assign-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.25);
+      backdrop-filter: blur(3px);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.15s; padding: 20px;
+    }
+    .assign-modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .assign-modal {
+      background: var(--surface);
+      border-radius: 14px; padding: 20px;
+      width: 100%; max-width: 320px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .assign-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--text-muted); }
+    .assign-options { display: flex; flex-direction: column; gap: 6px; }
+
+    .assign-option {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500;
+      padding: 10px 14px; border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer; text-align: left; transition: all 0.15s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .assign-option:hover { border-color: var(--yellow); background: rgba(245,196,0,0.06); }
+    .assign-option.selected { border-color: var(--yellow); background: rgba(245,196,0,0.1); }
+
+    .assign-cancel {
+      width: 100%; margin-top: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px; padding: 8px;
+      border: none; background: none;
+      color: var(--text-faint); cursor: pointer;
+      border-radius: 6px; transition: background 0.15s;
+    }
+    .assign-cancel:hover { background: var(--surface-2); }
+
+    /* ── EMPTY / LOADING ── */
+    .loading { text-align: center; padding: 60px 20px; color: var(--text-faint); font-size: 13px; }
+    .empty { text-align: center; padding: 48px 20px; color: var(--text-faint); }
+    .empty-icon { font-size: 32px; margin-bottom: 12px; }
+    .empty-text { font-size: 13px; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .toast {
+      position: fixed;
+      bottom: 90px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--black); color: #fff;
+      font-size: 13px; padding: 10px 18px;
+      border-radius: 8px;
+      opacity: 0; transition: all 0.2s;
+      z-index: 500; white-space: nowrap;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+
+    /* ── TELA DE IDENTIFICAÇÃO ── */
+    .user-screen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0; padding: 40px 24px;
+    }
+    .user-screen.hidden { display: none; }
+
+    .user-logo {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 48px;
+    }
+    .user-logo-dot { width: 10px; height: 10px; background: var(--yellow); border-radius: 50%; }
+    .user-logo-text { font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+    .user-logo-sub { font-size: 11px; color: var(--text-faint); letter-spacing: 0.04em; margin-top: 2px; }
+
+    .user-question {
+      font-size: 20px; font-weight: 300;
+      color: var(--text); margin-bottom: 32px;
+      letter-spacing: -0.3px;
+    }
+
+    .user-options { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+
+    .user-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px; font-weight: 500;
+      padding: 18px 24px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: var(--shadow);
+    }
+    .user-btn:hover { border-color: var(--yellow); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .user-btn:active { transform: translateY(0); }
+
+    .user-btn-dot {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; flex-shrink: 0;
+      color: white;
+    }
+    .user-btn-name { font-size: 16px; font-weight: 500; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      <div>
+        <div class="logo-text">Tarefas</div>
+        <div style="font-size:10px;color:var(--text-faint);letter-spacing:0.04em;margin-top:1px">Cia do Fitness</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('ativas')">Ativas</button>
+      <button class="tab" onclick="switchTab('pausadas')">Pausadas</button>
+      <button class="tab" onclick="switchTab('historico')">Histórico</button>
+      <button class="tab" onclick="switchTab('config')">Config</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ATIVAS -->
+  <div id="page-ativas" class="page active">
+    <div class="filter-bar" id="filter-bar"></div>
+    <div id="loading-ativas" class="loading">carregando...</div>
+    <div id="list-ativas" class="task-list" style="display:none"></div>
+    <div id="empty-ativas" class="empty" style="display:none">
+      <div class="empty-icon">✓</div>
+      <div class="empty-text">Nenhuma tarefa pendente.</div>
+    </div>
+  </div>
+
+  <!-- PAUSADAS -->
+  <div id="page-pausadas" class="page">
+    <div id="loading-pausadas" class="loading">carregando...</div>
+    <div id="list-pausadas" style="display:none"></div>
+    <div id="empty-pausadas" class="empty" style="display:none">
+      <div class="empty-icon">⏸</div>
+      <div class="empty-text">Nenhuma tarefa pausada.</div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="page-historico" class="page">
+    <div id="loading-hist" class="loading">carregando...</div>
+    <div id="list-historico" style="display:none"></div>
+    <div id="empty-hist" class="empty" style="display:none">
+      <div class="empty-icon">📋</div>
+      <div class="empty-text">Nenhuma tarefa concluída ainda.</div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="page-config" class="page">
+    <div class="config-section">
+      <div class="config-title">Responsáveis</div>
+      <div id="list-responsaveis"></div>
+      <div class="add-resp-form">
+        <input type="color" id="new-resp-color" class="input-color" value="#1a1a1a" />
+        <input type="text" id="new-resp-nome" class="input-text" placeholder="Nome do responsável" maxlength="30" />
+        <button class="btn-sm btn-primary" onclick="addResponsavel()">+ Add</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<button class="fab" id="fab" onclick="openModal()">+</button>
+
+
+<!-- TELA DE IDENTIFICAÇÃO -->
+<div class="user-screen hidden" id="user-screen">
+  <div class="user-logo">
+    <div class="user-logo-dot"></div>
+    <div>
+      <div class="user-logo-text">Tarefas</div>
+      <div class="user-logo-sub">Cia do Fitness</div>
+    </div>
+  </div>
+  <div class="user-question">Quem é você?</div>
+  <div class="user-options">
+    <button class="user-btn" onclick="selectUser('adriano')">
+      <div class="user-btn-dot" style="background:#1a1a1a">A</div>
+      <span class="user-btn-name">Adriano</span>
+    </button>
+    <button class="user-btn" onclick="selectUser('thaise')">
+      <div class="user-btn-dot" style="background:#F5C400;color:#1a1a1a">T</div>
+      <span class="user-btn-name">Thaise</span>
+    </button>
+  </div>
+</div>
+
+<!-- MODAL NOVA TAREFA -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalIfOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nova Tarefa</div>
+    <input type="text" id="nova-titulo" class="modal-input" placeholder="O que precisa ser feito?" maxlength="120" />
+    <div class="modal-label">Responsável <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(pode selecionar mais de um)</span></div>
+    <div class="resp-options" id="resp-options"></div>
+    <div class="modal-label">Observação <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--text-faint)">(opcional)</span></div>
+    <textarea id="nova-obs" class="modal-textarea" placeholder="Algum detalhe ou comentário..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" id="btn-save" onclick="criarTarefa()">Criar Tarefa</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TAREFA -->
+<div class="modal-overlay" id="edit-modal-overlay" onclick="closeEditModalIfOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Editar Tarefa</div>
+    <input type="text" id="edit-titulo" class="modal-input" placeholder="Título da tarefa" maxlength="120" />
+    <div class="modal-label">Responsável <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px">(pode selecionar mais de um)</span></div>
+    <div class="resp-options" id="edit-resp-options"></div>
+    <div class="modal-label">Observação <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--text-faint)">(opcional)</span></div>
+    <textarea id="edit-obs" class="modal-textarea" placeholder="Algum detalhe ou comentário..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-save" id="btn-edit-save" onclick="salvarEdicao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ATRIBUIR (legado, mantido por compatibilidade) -->
+<div class="assign-modal-overlay" id="assign-overlay" onclick="closeAssignIfOutside(event)">
+  <div class="assign-modal">
+    <div class="assign-title">Atribuir a...</div>
+    <div class="assign-options" id="assign-options"></div>
+    <button class="assign-cancel" onclick="closeAssignModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL PAUSAR TAREFA -->
+<div class="center-overlay" id="pausa-overlay">
+  <div class="center-modal">
+    <div class="center-modal-title">Pausar tarefa</div>
+    <div class="center-modal-sub">Por que esta tarefa não foi resolvida ainda?</div>
+    <div class="center-modal-task" id="pausa-task-title"></div>
+    <div class="motivo-options" id="pausa-motivos"></div>
+    <div class="center-modal-actions">
+      <button class="btn-cancel" onclick="closePausaModal()">Cancelar</button>
+      <button class="btn-confirm yellow" id="btn-pausa-confirm" onclick="confirmarPausa()" disabled>Pausar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CANCELAR TAREFA -->
+<div class="center-overlay" id="cancelar-overlay">
+  <div class="center-modal">
+    <div class="center-modal-title">Cancelar tarefa</div>
+    <div class="center-modal-sub">Por que esta tarefa está sendo cancelada?</div>
+    <div class="center-modal-task" id="cancelar-task-title"></div>
+    <div class="motivo-options" id="cancelar-motivos"></div>
+    <div class="center-modal-actions">
+      <button class="btn-cancel" onclick="closeCancelarModal()">Voltar</button>
+      <button class="btn-confirm red" id="btn-cancelar-confirm" onclick="confirmarCancelar()" disabled>Cancelar tarefa</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 15 DIAS -->
+<div class="center-overlay" id="old-task-overlay">
+  <div class="center-modal">
+    <div class="center-modal-title">⏰ Tarefa em aberto há 15+ dias</div>
+    <div class="center-modal-sub" id="old-task-sub"></div>
+    <div class="center-modal-task" id="old-task-title"></div>
+    <div class="modal-label" style="margin-bottom:8px">Por que ainda não foi resolvida?</div>
+    <div class="motivo-options" id="old-task-motivos"></div>
+    <div class="modal-label" style="margin-top:12px;margin-bottom:8px">O que fazer com ela?</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+      <button class="motivo-btn" id="old-action-feita" onclick="selectOldAction('feita')">✓ Já foi feita</button>
+      <button class="motivo-btn" id="old-action-manter" onclick="selectOldAction('manter')">Manter na lista</button>
+      <button class="motivo-btn" id="old-action-pausar" onclick="selectOldAction('pausar')">Mover para Pausadas</button>
+    </div>
+    <div class="center-modal-actions">
+      <button class="btn-cancel" onclick="closeOldTaskModal()">Agora não</button>
+      <button class="btn-confirm yellow" id="btn-old-confirm" onclick="confirmarOldTask()" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL REVISÃO 90 DIAS (PAUSADAS) -->
+<div class="center-overlay" id="paused90-overlay">
+  <div class="center-modal">
+    <div class="center-modal-title">⏸ Tarefa pausada há 90+ dias</div>
+    <div class="center-modal-sub" id="paused90-sub"></div>
+    <div class="center-modal-task" id="paused90-title"></div>
+    <div id="paused90-motivo" style="font-size:11px;color:var(--text-muted);margin-bottom:16px;font-style:italic"></div>
+    <div class="modal-label" style="margin-bottom:8px">O que deseja fazer?</div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <button class="motivo-btn" id="paused90-action-manter" onclick="selectPaused90Action('manter')">Manter pausada</button>
+      <button class="motivo-btn" id="paused90-action-reativar" onclick="selectPaused90Action('reativar')">Voltar para a lista</button>
+    </div>
+    <div class="center-modal-actions">
+      <button class="btn-cancel" onclick="closePaused90Modal()">Agora não</button>
+      <button class="btn-confirm yellow" id="btn-paused90-confirm" onclick="confirmarPaused90()" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://ptweuugkqsodgqywmsxi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0d2V1dWdrcXNvZGdxeXdtc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNDQxMTksImV4cCI6MjA4OTYyMDExOX0.oY6B3aVHkKdXcWHIKb793cFXIHXnFPwA45rx01jMjqg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const MOTIVOS_PAUSA = ['Falta de dinheiro', 'Aguardando terceiro', 'Sem tempo no momento', 'Mudei de prioridade', 'Outro motivo'];
+const MOTIVOS_CANCELAR = ['Não é mais necessário', 'Desisti', 'Delegado para outro', 'Situação mudou', 'Outro motivo'];
+const OLD_DAYS = 15;
+const RECENTLY_DONE_MS = 4 * 3600 * 1000; // 4 horas
+
+let responsaveis = [];
+let tarefasAtivas = [];
+let currentTab = 'ativas';
+let filtroRespId = null;
+
+// Seleção múltipla de responsáveis
+let selectedRespIds = [];
+let editSelectedRespIds = [];
+
+// Estado dos modais
+let pausingTaskId = null;
+let pausingMotivo = null;
+let cancelingTaskId = null;
+let cancelingMotivo = null;
+let oldTaskId = null;
+let oldTaskMotivo = null;
+let oldTaskAction = null;
+let oldTaskQueue = []; // fila de tarefas velhas a perguntar
+
+// ── INIT ──
+async function init() {
+  await loadResponsaveis();
+  await loadAtivas();
+  setupRealtime();
+}
+
+// ── RESPONSÁVEIS ──
+async function loadResponsaveis() {
+  const { data } = await sb.from('tarefas_responsaveis').select('*').order('criado_em');
+  responsaveis = data || [];
+  renderResponsaveis();
+  renderFilterBar();
+}
+
+function getRespById(id) { return responsaveis.find(r => r.id === id); }
+
+function renderResponsaveis() {
+  const el = document.getElementById('list-responsaveis');
+  if (!el) return;
+  el.innerHTML = '';
+  responsaveis.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'resp-item';
+    div.innerHTML = `
+      <div class="resp-color-dot" style="background:${r.cor}"></div>
+      <span class="resp-name">${r.nome}</span>
+      <button class="resp-delete-btn" onclick="deleteResponsavel('${r.id}')">✕</button>
+    `;
+    el.appendChild(div);
+  });
+}
+
+// ── FILTRO ──
+function renderFilterBar() {
+  const bar = document.getElementById('filter-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  const todos = document.createElement('button');
+  todos.className = 'filter-btn' + (filtroRespId === null ? ' active' : '');
+  todos.textContent = 'Todos';
+  todos.onclick = () => setFiltro(null);
+  bar.appendChild(todos);
+
+  responsaveis.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (filtroRespId === r.id ? ' active' : '');
+    btn.textContent = r.nome;
+    btn.onclick = () => setFiltro(r.id);
+    bar.appendChild(btn);
+  });
+}
+
+function setFiltro(respId) {
+  filtroRespId = respId;
+  renderFilterBar();
+  renderAtivas();
+}
+
+// ── RESP OPTIONS (multi-select) ──
+function renderRespOptions(containerId, selectedIds) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  responsaveis.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'resp-option' + (selectedIds.includes(r.id) ? ' selected' : '');
+    btn.textContent = r.nome;
+    btn.dataset.id = r.id;
+    btn.onclick = () => {
+      const idx = selectedIds.indexOf(r.id);
+      if (idx >= 0) selectedIds.splice(idx, 1);
+      else selectedIds.push(r.id);
+      renderRespOptions(containerId, selectedIds);
+    };
+    el.appendChild(btn);
+  });
+}
+
+// ── TAREFAS ATIVAS ──
+async function loadAtivas() {
+  const { data } = await sb.from('tarefas')
+    .select('*, r1:tarefas_responsaveis!tarefas_responsavel_id_fkey(id,nome,cor), r2:tarefas_responsaveis!tarefas_responsavel2_id_fkey(id,nome,cor)')
+    .eq('status', 'ativa')
+    .order('criado_em', { ascending: false }); // mais recente no topo
+  tarefasAtivas = data || [];
+  renderAtivas();
+  checkOldTasks();
+}
+
+function renderAtivas() {
+  const loading = document.getElementById('loading-ativas');
+  const list = document.getElementById('list-ativas');
+  const empty = document.getElementById('empty-ativas');
+  loading.style.display = 'none';
+
+  let filtradas = filtroRespId === null
+    ? tarefasAtivas
+    : tarefasAtivas.filter(t => t.responsavel_id === filtroRespId || t.responsavel2_id === filtroRespId);
+
+  if (!filtradas.length) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    empty.querySelector('.empty-text').textContent = filtroRespId
+      ? 'Nenhuma tarefa para este responsável.'
+      : 'Nenhuma tarefa pendente.';
+    return;
+  }
+
+  empty.style.display = 'none';
+  list.style.display = 'flex';
+  list.innerHTML = '';
+
+  // Recém concluídas no topo (ficam visíveis por 4h)
+  const recentlyDone = tarefasAtivas.filter(t => t._recentlyDone);
+  recentlyDone.forEach(t => list.appendChild(buildRecentlyDoneCard(t)));
+
+  filtradas.forEach(t => {
+    if (!t._recentlyDone) list.appendChild(buildTaskCard(t));
+  });
+}
+
+function buildRecentlyDoneCard(t) {
+  const div = document.createElement('div');
+  div.className = 'task-card recently-done';
+  div.innerHTML = `
+    <div class="task-content">
+      <div class="task-title">${escapeHtml(t.titulo)}</div>
+      <div class="task-meta">
+        <span class="done-badge">✓ concluída</span>
+      </div>
+    </div>`;
+  return div;
+}
+
+function buildTaskCard(t) {
+  const div = document.createElement('div');
+  div.className = 'task-card';
+  div.id = 'task-' + t.id;
+
+  const resp1 = t.r1;
+  const resp2 = t.r2;
+  const cor = resp1 ? resp1.cor : '#cccccc';
+
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `#task-${t.id}::before { background: ${cor}; }`;
+  document.head.appendChild(styleEl);
+
+  const age = getAge(t.criado_em);
+  const isOld = age.days >= OLD_DAYS;
+  if (isOld) div.classList.add('old-task');
+
+  const ageClass = age.days >= OLD_DAYS ? 'alert' : age.days > 7 ? 'warn' : '';
+
+  const resp1Tag = resp1
+    ? `<button class="resp-tag" style="background:${resp1.cor};color:${getTextColor(resp1.cor)}" onclick="openEditModal('${t.id}')">${resp1.nome}</button>`
+    : `<button class="resp-tag" style="background:#e0e0de;color:#888" onclick="openEditModal('${t.id}')">atribuir</button>`;
+
+  const resp2Tag = resp2
+    ? `<button class="resp-tag" style="background:${resp2.cor};color:${getTextColor(resp2.cor)}" onclick="openEditModal('${t.id}')">${resp2.nome}</button>`
+    : '';
+
+  const obsHtml = t.observacao
+    ? `<div class="task-obs">${escapeHtml(t.observacao)}</div>` : '';
+
+  div.innerHTML = `
+    <div class="task-check" onclick="concluirTarefa('${t.id}')"></div>
+    <div class="task-content">
+      <div class="task-title">${escapeHtml(t.titulo)}</div>
+      <div class="task-meta">
+        ${resp1Tag}${resp2Tag}
+        <span class="task-age ${ageClass}">${age.label}</span>
+      </div>
+      ${obsHtml}
+    </div>
+    <div class="task-actions">
+      <button class="task-action-btn" onclick="openEditModal('${t.id}')" title="Editar">✎</button>
+      <button class="task-action-btn pause" onclick="openPausaModal('${t.id}')" title="Pausar">⏸</button>
+      <button class="task-action-btn danger" onclick="openCancelarModal('${t.id}')" title="Cancelar">✕</button>
+    </div>`;
+
+  return div;
+}
+
+function getAge(isoDate) {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor(diff / 3600000);
+  if (days === 0) return { days: 0, label: `${hours}h criado` };
+  if (days === 1) return { days: 1, label: '1d criado' };
+  return { days, label: `${days}d criado` };
+}
+
+function getTextColor(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return (r*0.299 + g*0.587 + b*0.114) > 150 ? '#1a1a1a' : '#ffffff';
+}
+
+function escapeHtml(text) {
+  return (text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ── CONCLUIR ──
+async function concluirTarefa(id) {
+  await sb.from('tarefas').update({ status: 'concluida', concluido_em: new Date().toISOString() }).eq('id', id);
+  // Mostra como recém concluída por 4h visualmente
+  const t = tarefasAtivas.find(t => t.id === id);
+  if (t) {
+    t._recentlyDone = true;
+    t._doneAt = Date.now();
+  }
+  renderAtivas();
+  showToast('Tarefa concluída ✓');
+  // Remove da lista após 4h (sem reload)
+  setTimeout(() => {
+    tarefasAtivas = tarefasAtivas.filter(t => t.id !== id);
+    renderAtivas();
+  }, RECENTLY_DONE_MS);
+}
+
+// ── VERIFICAÇÃO 15 DIAS ──
+const ADRIANO_ID = '40715184-8a58-4be9-8d46-661fd00a297d';
+const THAISE_ID = '4037b37f-e6b3-484d-a7ef-0731d7bd4fe7';
+let currentUser = null; // 'adriano' ou 'thaise'
+
+function selectUser(user) {
+  currentUser = user;
+  document.getElementById('user-screen').classList.add('hidden');
+  init();
+}
+
+function checkOldTasks() {
+  const already = JSON.parse(localStorage.getItem('checked_old') || '{}');
+  oldTaskQueue = tarefasAtivas.filter(t => {
+    const age = getAge(t.criado_em);
+    const lastCheck = already[t.id] || 0;
+    // Só pergunta se a tarefa pertence ao usuário atual
+    const myId = currentUser === 'adriano' ? ADRIANO_ID : THAISE_ID;
+    const isMine = !t.responsavel_id || t.responsavel_id === myId || t.responsavel2_id === myId;
+    return isMine && age.days >= OLD_DAYS && (Date.now() - lastCheck > 7 * 86400000);
+  });
+  if (oldTaskQueue.length > 0) {
+    setTimeout(() => showNextOldTask(), 1200);
+  }
+}
+
+function showNextOldTask() {
+  if (!oldTaskQueue.length) return;
+  const t = oldTaskQueue[0];
+  oldTaskId = t.id;
+  oldTaskMotivo = null;
+  oldTaskAction = null;
+
+  const age = getAge(t.criado_em);
+  document.getElementById('old-task-sub').textContent =
+    `Esta tarefa está aberta há ${age.days} dias. O que está acontecendo?`;
+  document.getElementById('old-task-title').textContent = t.titulo;
+
+  const motivosEl = document.getElementById('old-task-motivos');
+  motivosEl.innerHTML = '';
+  MOTIVOS_PAUSA.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'motivo-btn';
+    btn.textContent = m;
+    btn.onclick = () => {
+      oldTaskMotivo = m;
+      motivosEl.querySelectorAll('.motivo-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      updateOldConfirmBtn();
+    };
+    motivosEl.appendChild(btn);
+  });
+
+  // Reset action buttons
+  document.getElementById('old-action-feita').classList.remove('selected');
+  document.getElementById('old-action-manter').classList.remove('selected');
+  document.getElementById('old-action-pausar').classList.remove('selected');
+  document.getElementById('btn-old-confirm').disabled = true;
+
+  document.getElementById('old-task-overlay').classList.add('open');
+}
+
+function selectOldAction(action) {
+  oldTaskAction = action;
+  document.getElementById('old-action-feita').classList.toggle('selected', action === 'feita');
+  document.getElementById('old-action-manter').classList.toggle('selected', action === 'manter');
+  document.getElementById('old-action-pausar').classList.toggle('selected', action === 'pausar');
+  updateOldConfirmBtn();
+}
+
+function updateOldConfirmBtn() {
+  // 'feita' não precisa de motivo
+  const needsMotivo = oldTaskAction !== 'feita';
+  document.getElementById('btn-old-confirm').disabled = !(oldTaskAction && (!needsMotivo || oldTaskMotivo));
+}
+
+async function confirmarOldTask() {
+  if (!oldTaskMotivo || !oldTaskAction) return;
+
+  // Marca como checada
+  const already = JSON.parse(localStorage.getItem('checked_old') || '{}');
+  already[oldTaskId] = Date.now();
+  localStorage.setItem('checked_old', JSON.stringify(already));
+
+  if (oldTaskAction === 'feita') {
+    await sb.from('tarefas').update({ status: 'concluida', concluido_em: new Date().toISOString() }).eq('id', oldTaskId);
+    tarefasAtivas = tarefasAtivas.filter(t => t.id !== oldTaskId);
+    showToast('Tarefa marcada como concluída ✓');
+  } else if (oldTaskAction === 'pausar') {
+    await sb.from('tarefas').update({
+      status: 'pausada',
+      motivo_pausa: oldTaskMotivo,
+      pausado_em: new Date().toISOString()
+    }).eq('id', oldTaskId);
+    tarefasAtivas = tarefasAtivas.filter(t => t.id !== oldTaskId);
+    showToast('Tarefa movida para Pausadas');
+  } else {
+    // Manter: só registra o motivo sem mudar status
+    await sb.from('tarefas').update({ motivo_pausa: oldTaskMotivo }).eq('id', oldTaskId);
+    showToast('Tarefa mantida na lista');
+  }
+
+  closeOldTaskModal();
+  renderAtivas();
+
+  // Próxima tarefa velha
+  oldTaskQueue.shift();
+  if (oldTaskQueue.length > 0) {
+    setTimeout(() => showNextOldTask(), 600);
+  }
+}
+
+function closeOldTaskModal() {
+  document.getElementById('old-task-overlay').classList.remove('open');
+  oldTaskId = null; oldTaskMotivo = null; oldTaskAction = null;
+}
+
+// ── PAUSAR ──
+function openPausaModal(id) {
+  pausingTaskId = id;
+  pausingMotivo = null;
+  const t = tarefasAtivas.find(t => t.id === id);
+  document.getElementById('pausa-task-title').textContent = t ? t.titulo : '';
+
+  const el = document.getElementById('pausa-motivos');
+  el.innerHTML = '';
+  MOTIVOS_PAUSA.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'motivo-btn';
+    btn.textContent = m;
+    btn.onclick = () => {
+      pausingMotivo = m;
+      el.querySelectorAll('.motivo-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('btn-pausa-confirm').disabled = false;
+    };
+    el.appendChild(btn);
+  });
+
+  document.getElementById('btn-pausa-confirm').disabled = true;
+  document.getElementById('pausa-overlay').classList.add('open');
+}
+
+function closePausaModal() {
+  document.getElementById('pausa-overlay').classList.remove('open');
+  pausingTaskId = null; pausingMotivo = null;
+}
+
+async function confirmarPausa() {
+  if (!pausingMotivo) return;
+  await sb.from('tarefas').update({
+    status: 'pausada',
+    motivo_pausa: pausingMotivo,
+    pausado_em: new Date().toISOString()
+  }).eq('id', pausingTaskId);
+  tarefasAtivas = tarefasAtivas.filter(t => t.id !== pausingTaskId);
+  closePausaModal();
+  renderAtivas();
+  showToast('Tarefa pausada');
+}
+
+// ── CANCELAR ──
+function openCancelarModal(id) {
+  cancelingTaskId = id;
+  cancelingMotivo = null;
+  const t = tarefasAtivas.find(t => t.id === id);
+  document.getElementById('cancelar-task-title').textContent = t ? t.titulo : '';
+
+  const el = document.getElementById('cancelar-motivos');
+  el.innerHTML = '';
+  MOTIVOS_CANCELAR.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'motivo-btn';
+    btn.textContent = m;
+    btn.onclick = () => {
+      cancelingMotivo = m;
+      el.querySelectorAll('.motivo-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('btn-cancelar-confirm').disabled = false;
+    };
+    el.appendChild(btn);
+  });
+
+  document.getElementById('btn-cancelar-confirm').disabled = true;
+  document.getElementById('cancelar-overlay').classList.add('open');
+}
+
+function closeCancelarModal() {
+  document.getElementById('cancelar-overlay').classList.remove('open');
+  cancelingTaskId = null; cancelingMotivo = null;
+}
+
+async function confirmarCancelar() {
+  if (!cancelingMotivo) return;
+  await sb.from('tarefas').update({
+    status: 'cancelada',
+    motivo_cancelamento: cancelingMotivo,
+    cancelado_em: new Date().toISOString()
+  }).eq('id', cancelingTaskId);
+  tarefasAtivas = tarefasAtivas.filter(t => t.id !== cancelingTaskId);
+  closeCancelarModal();
+  renderAtivas();
+  showToast('Tarefa cancelada');
+}
+
+// ── PAUSADAS ──
+async function loadPausadas() {
+  const loading = document.getElementById('loading-pausadas');
+  const list = document.getElementById('list-pausadas');
+  const empty = document.getElementById('empty-pausadas');
+  loading.style.display = 'block';
+  list.style.display = 'none';
+
+  const { data } = await sb.from('tarefas')
+    .select('*, r1:tarefas_responsaveis!tarefas_responsavel_id_fkey(id,nome,cor)')
+    .eq('status', 'pausada')
+    .order('pausado_em', { ascending: false });
+
+  loading.style.display = 'none';
+
+  if (!data || !data.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  list.style.display = 'block';
+  list.innerHTML = '';
+
+  checkPausadas90(data);
+
+  data.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'paused-card';
+    const resp = t.r1;
+    const respTag = resp
+      ? `<span class="resp-tag" style="background:${resp.cor};color:${getTextColor(resp.cor)}">${resp.nome}</span>`
+      : '';
+    const dias = t.pausado_em ? Math.floor((Date.now() - new Date(t.pausado_em).getTime()) / 86400000) : '?';
+    card.innerHTML = `
+      <div class="paused-icon">⏸</div>
+      <div class="paused-body">
+        <div class="paused-title">${escapeHtml(t.titulo)}</div>
+        <div class="paused-meta">
+          ${respTag}
+          <span class="task-age">${dias}d pausada</span>
+        </div>
+        ${t.motivo_pausa ? `<div class="paused-motivo">${t.motivo_pausa}</div>` : ''}
+      </div>
+      <button class="btn-reativar" onclick="reativarTarefa('${t.id}')">Reativar</button>`;
+    list.appendChild(card);
+  });
+}
+
+async function reativarTarefa(id) {
+  await sb.from('tarefas').update({
+    status: 'ativa',
+    motivo_pausa: null,
+    pausado_em: null
+  }).eq('id', id);
+  await loadAtivas();
+  await loadPausadas();
+  showToast('Tarefa reativada');
+}
+
+// ── REVISÃO DE 90 DIAS (PAUSADAS) ──
+const PAUSED_REVIEW_DAYS = 90;
+let pausedReviewQueue = [];
+let pausedReviewId = null;
+let pausedReviewAction = null;
+
+function checkPausadas90(pausedTasks) {
+  const already = JSON.parse(localStorage.getItem('checked_paused90') || '{}');
+  pausedReviewQueue = pausedTasks.filter(t => {
+    if (!t.pausado_em) return false;
+    const days = Math.floor((Date.now() - new Date(t.pausado_em).getTime()) / 86400000);
+    const lastCheck = already[t.id] || 0;
+    return days >= PAUSED_REVIEW_DAYS && (Date.now() - lastCheck > 30 * 86400000);
+  });
+  if (pausedReviewQueue.length > 0) {
+    setTimeout(() => showNextPausedReview(), 800);
+  }
+}
+
+function showNextPausedReview() {
+  if (!pausedReviewQueue.length) return;
+  const t = pausedReviewQueue[0];
+  pausedReviewId = t.id;
+  pausedReviewAction = null;
+
+  const days = t.pausado_em ? Math.floor((Date.now() - new Date(t.pausado_em).getTime()) / 86400000) : '?';
+  document.getElementById('paused90-sub').textContent =
+    `Esta tarefa está pausada há ${days} dias. O que deseja fazer?`;
+  document.getElementById('paused90-title').textContent = t.titulo;
+  document.getElementById('paused90-motivo').textContent = t.motivo_pausa ? `Motivo: ${t.motivo_pausa}` : '';
+
+  document.getElementById('paused90-action-manter').classList.remove('selected');
+  document.getElementById('paused90-action-reativar').classList.remove('selected');
+  document.getElementById('btn-paused90-confirm').disabled = true;
+
+  document.getElementById('paused90-overlay').classList.add('open');
+}
+
+function selectPaused90Action(action) {
+  pausedReviewAction = action;
+  document.getElementById('paused90-action-manter').classList.toggle('selected', action === 'manter');
+  document.getElementById('paused90-action-reativar').classList.toggle('selected', action === 'reativar');
+  document.getElementById('btn-paused90-confirm').disabled = false;
+}
+
+async function confirmarPaused90() {
+  if (!pausedReviewAction) return;
+
+  const already = JSON.parse(localStorage.getItem('checked_paused90') || '{}');
+  already[pausedReviewId] = Date.now();
+  localStorage.setItem('checked_paused90', JSON.stringify(already));
+
+  if (pausedReviewAction === 'reativar') {
+    await sb.from('tarefas').update({
+      status: 'ativa',
+      motivo_pausa: null,
+      pausado_em: null
+    }).eq('id', pausedReviewId);
+    showToast('Tarefa reativada para a lista ativa');
+    await loadAtivas();
+  } else {
+    showToast('Tarefa mantida em Pausadas por mais 90 dias');
+  }
+
+  closePaused90Modal();
+  await loadPausadas();
+
+  pausedReviewQueue.shift();
+  if (pausedReviewQueue.length > 0) {
+    setTimeout(() => showNextPausedReview(), 600);
+  }
+}
+
+function closePaused90Modal() {
+  document.getElementById('paused90-overlay').classList.remove('open');
+  pausedReviewId = null;
+  pausedReviewAction = null;
+}
+
+// ── HISTÓRICO ──
+async function loadHistorico() {
+  const loading = document.getElementById('loading-hist');
+  const list = document.getElementById('list-historico');
+  const empty = document.getElementById('empty-hist');
+  loading.style.display = 'block';
+  list.style.display = 'none';
+
+  const { data } = await sb.from('tarefas')
+    .select('*, r1:tarefas_responsaveis!tarefas_responsavel_id_fkey(nome,cor)')
+    .in('status', ['concluida', 'cancelada'])
+    .order('concluido_em', { ascending: false });
+
+  loading.style.display = 'none';
+
+  if (!data || !data.length) { empty.style.display = 'block'; return; }
+
+  const grupos = {};
+  data.forEach(t => {
+    const d = new Date(t.concluido_em || t.cancelado_em || t.criado_em);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    if (!grupos[key]) grupos[key] = { label, items: [] };
+    grupos[key].items.push(t);
+  });
+
+  empty.style.display = 'none';
+  list.style.display = 'block';
+  list.innerHTML = '';
+
+  Object.keys(grupos).sort().reverse().forEach(key => {
+    const g = grupos[key];
+    const section = document.createElement('div');
+    section.className = 'hist-section';
+    section.innerHTML = `<div class="hist-section-title">${g.label}</div>`;
+
+    g.items.forEach(t => {
+      const resp = t.r1;
+      const cor = resp ? resp.cor : '#ccc';
+      const date = t.concluido_em || t.cancelado_em
+        ? new Date(t.concluido_em || t.cancelado_em).toLocaleDateString('pt-BR') : '';
+      const isCancelada = t.status === 'cancelada';
+
+      const card = document.createElement('div');
+      card.className = 'hist-card' + (isCancelada ? ' cancelada' : '');
+      if (!isCancelada) card.style.borderLeft = `3px solid ${cor}`;
+
+      card.innerHTML = `
+        <div class="hist-icon ${t.status}">${isCancelada ? '✕' : ''}</div>
+        <div class="hist-body">
+          <div class="hist-title">${escapeHtml(t.titulo)}</div>
+          ${isCancelada && t.motivo_cancelamento ? `<div class="hist-sub">${t.motivo_cancelamento}</div>` : ''}
+        </div>
+        <div class="hist-info">${resp ? resp.nome + '<br>' : ''}${date}</div>`;
+      section.appendChild(card);
+    });
+
+    list.appendChild(section);
+  });
+}
+
+// ── MODAL NOVA TAREFA ──
+function openModal() {
+  selectedRespIds = [];
+  document.getElementById('nova-titulo').value = '';
+  document.getElementById('nova-obs').value = '';
+  renderRespOptions('resp-options', selectedRespIds);
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('nova-titulo').focus(), 300);
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModalIfOutside(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+async function criarTarefa() {
+  const titulo = document.getElementById('nova-titulo').value.trim();
+  if (!titulo) { showToast('Digite o título da tarefa'); return; }
+  const obs = document.getElementById('nova-obs').value.trim();
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+
+  await sb.from('tarefas').insert({
+    titulo,
+    responsavel_id: selectedRespIds[0] || null,
+    responsavel2_id: selectedRespIds[1] || null,
+    observacao: obs || null,
+    status: 'ativa'
+  });
+
+  btn.disabled = false;
+  closeModal();
+  await loadAtivas();
+  showToast('Tarefa criada');
+}
+
+// ── MODAL EDITAR ──
+let editingTaskId = null;
+
+function openEditModal(taskId) {
+  const t = tarefasAtivas.find(t => t.id === taskId);
+  if (!t) return;
+  editingTaskId = taskId;
+  editSelectedRespIds = [t.responsavel_id, t.responsavel2_id].filter(Boolean);
+  document.getElementById('edit-titulo').value = t.titulo;
+  document.getElementById('edit-obs').value = t.observacao || '';
+  renderRespOptions('edit-resp-options', editSelectedRespIds);
+  document.getElementById('edit-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('edit-titulo').focus(), 300);
+}
+
+function closeEditModal() { document.getElementById('edit-modal-overlay').classList.remove('open'); editingTaskId = null; }
+function closeEditModalIfOutside(e) { if (e.target === document.getElementById('edit-modal-overlay')) closeEditModal(); }
+
+async function salvarEdicao() {
+  const titulo = document.getElementById('edit-titulo').value.trim();
+  if (!titulo) { showToast('Digite o título'); return; }
+  const obs = document.getElementById('edit-obs').value.trim();
+  const btn = document.getElementById('btn-edit-save');
+  btn.disabled = true;
+
+  await sb.from('tarefas').update({
+    titulo,
+    responsavel_id: editSelectedRespIds[0] || null,
+    responsavel2_id: editSelectedRespIds[1] || null,
+    observacao: obs || null
+  }).eq('id', editingTaskId);
+
+  btn.disabled = false;
+  closeEditModal();
+  await loadAtivas();
+  showToast('Tarefa atualizada');
+}
+
+// ── ASSIGN (legado) ──
+let assigningTaskId = null;
+function openAssignModal(taskId) { assigningTaskId = taskId; }
+function closeAssignModal() { document.getElementById('assign-overlay').classList.remove('open'); }
+function closeAssignIfOutside(e) { if (e.target === document.getElementById('assign-overlay')) closeAssignModal(); }
+async function assignTask(respId) { closeAssignModal(); }
+
+// ── RESPONSÁVEIS CONFIG ──
+async function addResponsavel() {
+  const nome = document.getElementById('new-resp-nome').value.trim();
+  const cor = document.getElementById('new-resp-color').value;
+  if (!nome) return;
+  await sb.from('tarefas_responsaveis').insert({ nome, cor });
+  document.getElementById('new-resp-nome').value = '';
+  await loadResponsaveis();
+  showToast('Responsável adicionado');
+}
+
+async function deleteResponsavel(id) {
+  if (!confirm('Remover este responsável?')) return;
+  await sb.from('tarefas_responsaveis').delete().eq('id', id);
+  await loadResponsaveis();
+  renderAtivas();
+}
+
+// ── REALTIME ──
+function setupRealtime() {
+  sb.channel('tarefas-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tarefas' }, async () => {
+      await loadAtivas();
+      if (currentTab === 'historico') await loadHistorico();
+      if (currentTab === 'pausadas') await loadPausadas();
+    })
+    .subscribe();
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  currentTab = tab;
+  const tabNames = ['ativas', 'pausadas', 'historico', 'config'];
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', tabNames[i] === tab));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('fab').classList.toggle('hidden', tab !== 'ativas');
+
+  if (tab === 'historico') loadHistorico();
+  if (tab === 'pausadas') loadPausadas();
+  if (tab === 'config') renderResponsaveis();
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── ENTER ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('nova-titulo').addEventListener('keydown', e => { if (e.key === 'Enter') criarTarefa(); });
+  document.getElementById('edit-titulo').addEventListener('keydown', e => { if (e.key === 'Enter') salvarEdicao(); });
+  document.getElementById('new-resp-nome').addEventListener('keydown', e => { if (e.key === 'Enter') addResponsavel(); });
+  // Mostra tela de identificação — init() é chamado após a escolha
+  // user-screen começa hidden no HTML, removemos o hidden aqui
+  document.getElementById('user-screen').classList.remove('hidden');
+});
+</script>
+</body>
+</html>
